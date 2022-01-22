@@ -9,7 +9,9 @@ mondayRoutes.route("/monday").get(async function (req, res) {
       if (err) {
         res.status(400).json({ message: "Error fetching token" });
       } else {
-        res.status(200).json({ message: "token successfully retrieved" });
+        res
+          .status(200)
+          .json({ message: "token successfully retrieved", result: result });
       }
     });
 });
