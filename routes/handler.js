@@ -25,7 +25,7 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
       res.status(400).json({ message: "Error inserting token" });
     } else {
       console.log(`Added a new token`);
-      res.status(204).json({ message: "token successfully uploaded" });
+      res.status(200).json({ message: "token successfully uploaded" });
     }
   });
 });
