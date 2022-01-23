@@ -3,6 +3,7 @@ const mondayRoutes = express.Router();
 const dbo = require("../connection/conn");
 mondayRoutes.route("/monday").get(async function (req, res) {
   const dbConnect = dbo.getDb();
+  console.log(req);
   dbConnect
     .collection("mondaytoken")
     .findOne(req.body, function (err, result) {
@@ -17,6 +18,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
 });
 mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
+  
   const schema = {
     token_id: req.body.token_id,
     date_added: new Date(),
