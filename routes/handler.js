@@ -20,9 +20,9 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
   
   const schema = {
-    token_id: req.query.token_id,
+    token_id: req.body.token_id,
     date_added: new Date(),
-    token: req.query.token,
+    token: req.body.token,
   };
   dbConnect.collection("mondaytoken").insertOne(schema, function (err, result) {
     if (err) {
