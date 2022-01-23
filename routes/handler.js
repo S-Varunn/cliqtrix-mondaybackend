@@ -18,7 +18,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
 });
 mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
-  
+   console.log(req);
   const schema = {
     token_id: req.body.token_id,
     date_added: new Date(),
@@ -35,6 +35,7 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
 });
 mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
+   console.log(req);
   const query = { token_id: req.query.token_id };
   const newToken = req.query.new_token;
   const updates = {
@@ -55,6 +56,7 @@ mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
 
 mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
   const dbConnect = dbo.getDb();
+   console.log(req);
   const query = { token_id: req.query.token_id };
 
   dbConnect.collection("mondaytoken").deleteOne(query, function (err, _result) {
