@@ -6,7 +6,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
   console.log(req);
   dbConnect
     .collection("mondaytoken")
-    .findOne(req.body, function (err, result) {
+    .findOne(req.query, function (err, result) {
       if (err) {
         res.status(400).json({ message: "Error fetching token" });
       } else {
@@ -20,9 +20,9 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
   
   const schema = {
-    token_id: req.body.token_id,
+    token_id: req.query.token_id,
     date_added: new Date(),
-    token: req.body.token,
+    token: req.query.token,
   };
   dbConnect.collection("mondaytoken").insertOne(schema, function (err, result) {
     if (err) {
@@ -35,8 +35,8 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
 });
 mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
-  const query = { token_id: req.body.token_id };
-  const newToken = req.body.new_token;
+  const query = { token_id: req.query.token_id };
+  const newToken = req.query.new_token;
   const updates = {
     $set: {
       token: newToken,
@@ -55,7 +55,7 @@ mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
 
 mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
   const dbConnect = dbo.getDb();
-  const query = { token_id: req.body.token_id };
+  const query = { token_id: req.query.token_id };
 
   dbConnect.collection("mondaytoken").deleteOne(query, function (err, _result) {
     if (err) {
