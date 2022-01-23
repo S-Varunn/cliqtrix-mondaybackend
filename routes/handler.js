@@ -5,7 +5,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   dbConnect
     .collection("mondaytoken")
-    .findOne(req.query, function (err, result) {
+    .findOne(req.body, function (err, result) {
       if (err) {
         res.status(400).json({ message: "Error fetching token" });
       } else {
