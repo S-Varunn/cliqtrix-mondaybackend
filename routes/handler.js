@@ -36,8 +36,8 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
 mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
    console.log(req);
-  const query = { token_id: req.query.token_id };
-  const newToken = req.query.new_token;
+  const query = { token_id: req.body.token_id };
+  const newToken = req.body.new_token;
   const updates = {
     $set: {
       token: newToken,
