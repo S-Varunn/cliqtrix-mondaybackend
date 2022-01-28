@@ -1,6 +1,8 @@
 const express = require("express");
 const mondayRoutes = express.Router();
 const dbo = require("../connection/conn");
+const { GraphQLClient } = require("graphql-request");
+
 mondayRoutes.route("/monday").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   console.log(req);
@@ -18,7 +20,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
 });
 mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
-   console.log(req);
+  console.log(req);
   const schema = {
     token_id: req.body.token_id,
     date_added: new Date(),
@@ -35,7 +37,7 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
 });
 mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
-   console.log(req);
+  console.log(req);
   const query = { token_id: req.body.token_id };
   const newToken = req.body.new_token;
   const updates = {
@@ -56,7 +58,7 @@ mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
 
 mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
   const dbConnect = dbo.getDb();
-   console.log(req);
+  console.log(req);
   const query = { token_id: req.query.token_id };
 
   dbConnect.collection("mondaytoken").deleteOne(query, function (err, _result) {
@@ -66,6 +68,42 @@ mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
       res.status(200).json({ message: "token successfully deleted" });
     }
   });
+});
+
+mondayRoutes.route("/monday/getData").get(async function (req, res) {
+  const dbConnect = dbo.getDb();
+  const referenceId = req.query.reference_id;
+  const value = req.query.value;
+  const query = { token_id: referenceId };
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
+  let token = tokenData.token;
+  console.log(token, value);
+  const mondayQuery =
+    "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text } } }}";
+
+  const client = new GraphQLClient("https://api.monday.com/v2/", {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+  });
+  client
+    .request(mondayQuery)
+    .then((data) => {
+      cliqDirectExecution(data);
+      console.log(data);
+    })
+    .catch((err) => {
+      cliqMongoExecution();
+      console.log(err);
+    });
+  const cliqDirectExecution = (data) => {
+    console.log("Im sending data to cliq");
+    console.log(data);
+  };
+  const cliqMongoExecution = () => {
+    console.log("Im getting data from mongodb and passing it to cliq");
+  };
 });
 
 module.exports = mondayRoutes;
