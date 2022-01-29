@@ -99,7 +99,7 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   const cliqDirectExecution = async (data, referenceId) => {
     res
       .status(200)
-      .json({ message: "token successfully retrieved", result: data });
+      .json({ message: "Data successfully retrieved", result: data });
 
     const query = { referenceId: referenceId };
     const checkData = await dbConnect.collection("mondaydata").findOne(query);
@@ -125,7 +125,7 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
       .collection("mondaydata")
       .findOne(query, function (err, result) {
         if (err) {
-          res.status(400).json({ message: "Error fetching token" });
+          res.status(400).json({ message: "Error fetching Data" });
         } else {
           res.status(200).json({ result: result });
         }
