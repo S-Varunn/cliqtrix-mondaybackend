@@ -9,7 +9,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
   dbConnect
     .collection("mondaytoken")
     .findOne(req.query, function (err, result) {
-      if (err) {
+      if (err || result == null) {
         res.status(400).json({ message: "Error fetching token" });
       } else {
         res
@@ -73,11 +73,10 @@ mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
 mondayRoutes.route("/monday/getData").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   const referenceId = req.query.reference_id;
-  const value = req.query.value;
   const query = { token_id: referenceId };
   const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
   let token = tokenData.token;
-  console.log(token, value);
+  console.log(token);
   const mondayQuery =
     "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text } } }}";
 
@@ -90,19 +89,47 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   client
     .request(mondayQuery)
     .then((data) => {
-      cliqDirectExecution(data);
-      console.log(data);
+      cliqDirectExecution(data, referenceId);
+      console.log(data, referenceId);
     })
     .catch((err) => {
-      cliqMongoExecution();
+      cliqMongoExecution(referenceId);
       console.log(err);
     });
-  const cliqDirectExecution = (data) => {
-    console.log("Im sending data to cliq");
-    console.log(data);
+  const cliqDirectExecution = async (data, referenceId) => {
+    res
+      .status(200)
+      .json({ message: "token successfully retrieved", result: data });
+
+    const query = { referenceId: referenceId };
+    const checkData = await dbConnect.collection("mondaydata").findOne(query);
+    if (!checkData) {
+      const schema = {
+        referenceId: referenceId,
+        date_added: new Date(),
+        data: data,
+      };
+      dbConnect.collection("mondaydata").insertOne(schema);
+    } else {
+      const updates = {
+        $set: {
+          data: data,
+        },
+      };
+      dbConnect.collection("mondaydata").updateOne(query, updates);
+    }
   };
-  const cliqMongoExecution = () => {
-    console.log("Im getting data from mongodb and passing it to cliq");
+  const cliqMongoExecution = async (referenceId) => {
+    const query = { referenceId: referenceId };
+    await dbConnect
+      .collection("mondaydata")
+      .findOne(query, function (err, result) {
+        if (err) {
+          res.status(400).json({ message: "Error fetching token" });
+        } else {
+          res.status(200).json({ result: result });
+        }
+      });
   };
 });
 
