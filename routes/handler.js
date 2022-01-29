@@ -127,7 +127,7 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
         if (err) {
           res.status(400).json({ message: "Error fetching Data" });
         } else {
-          res.status(200).json({ result: result });
+          res.status(200).json({ result: result.data });
         }
       });
   };
