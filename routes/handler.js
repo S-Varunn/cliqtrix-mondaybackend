@@ -77,9 +77,7 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
   let token = tokenData.token;
   console.log(token);
-  const mondayQuery =
-    "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text} } }}";
-
+  const mondayQuery = "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text} } }}";
   const client = new GraphQLClient("https://api.monday.com/v2/", {
     headers: {
       "Content-Type": "application/json",
@@ -97,10 +95,13 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
       console.log(err);
     });
   const cliqDirectExecution = async (data, referenceId) => {
-    res
-      .status(200)
-      .json({ message: "Data successfully retrieved", result: data });
-
+    console.log(data);
+    let result = await formatData(data);
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Data successfully retrieved", result: result });
+    }
     const query = { referenceId: referenceId };
     const checkData = await dbConnect.collection("mondaydata").findOne(query);
     if (!checkData) {
@@ -121,15 +122,45 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   };
   const cliqMongoExecution = async (referenceId) => {
     const query = { referenceId: referenceId };
-    await dbConnect
-      .collection("mondaydata")
-      .findOne(query, function (err, result) {
-        if (err) {
-          res.status(400).json({ message: "Error fetching Data" });
-        } else {
-          res.status(200).json({ result: result.data });
-        }
+    let unformattedData;
+    unformattedData = await dbConnect.collection("mondaydata").findOne(query);
+    let formattedResult = await formatData(unformattedData.data);
+    if (formattedResult) {
+      res.status(200).json({ result: formattedResult });
+    }
+  };
+  const formatData = async (data) => {
+    let workingData = data.boards;
+    let result = [];
+
+    workingData.forEach(function (item) {
+      let subresult = {};
+      subresult.name = item.name;
+      boardGroup = item.groups;
+      boardItems = item.items;
+      boardGroup.forEach(function (group) {
+        let arrayResult = [];
+        boardItems.forEach(function (value) {
+          if (group.title === value.group.title) {
+            let column = value.column_values;
+            let arrayToObject = {};
+            arrayToObject["Task"] = value.name;
+            column.forEach(function (col) {
+              let title = col.title;
+              let text = col.text;
+              if (text == null) {
+                text = "";
+              }
+              arrayToObject[title] = text;
+            });
+            arrayResult.push(arrayToObject);
+          }
+        });
+        subresult[group.title] = JSON.stringify(Object.assign([], arrayResult));
       });
+      result.push(subresult);
+    });
+    return result;
   };
 });
 
