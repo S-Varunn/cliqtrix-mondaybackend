@@ -78,7 +78,7 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   let token = tokenData.token;
   console.log(token);
   const mondayQuery =
-    "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text id } } }}";
+    "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text} } }}";
 
   const client = new GraphQLClient("https://api.monday.com/v2/", {
     headers: {
