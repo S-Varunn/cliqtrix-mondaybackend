@@ -131,7 +131,9 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
   };
   const formatData = async (data) => {
     let workingData = data.boards;
+    let finalData = {};
     let result = [];
+    finalData["unformattedresult"] = workingData;
 
     workingData.forEach(function (item) {
       let subresult = {};
@@ -160,7 +162,8 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
       });
       result.push(subresult);
     });
-    return result;
+    finalData["formattedResult"] = result;
+    return finalData;
   };
 });
 
