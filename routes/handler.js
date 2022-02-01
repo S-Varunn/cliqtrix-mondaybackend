@@ -172,9 +172,9 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
   const dbConnect = dbo.getDb();
   console.log(req);
   dbConnect.collection("mondaystatus");
-  const referenceId = req.query.reference_id;
+  const referenceId = req.body.reference_id;
   const query = { referenceId: referenceId };
-  let data = req.query.data;
+  let data = req.body.data;
   const checkStatusData = await dbConnect
     .collection("mondaystatus")
     .findOne(query);
@@ -198,7 +198,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
 mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   console.log(req);
-  const referenceId = req.query.reference_id;
+  const referenceId = req.body.reference_id;
   const query = { referenceId: referenceId };
   dbConnect.collection("mondaystatus").findOne(query, function (err, result) {
     if (err || result == null) {
