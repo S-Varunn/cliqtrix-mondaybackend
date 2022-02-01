@@ -193,6 +193,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
     };
     dbConnect.collection("mondaystatus").updateOne(query, updates);
   }
+  res.status(200).json({ message: "Status successfully Updated" });
 });
 
 mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
