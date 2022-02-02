@@ -212,4 +212,55 @@ mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
   });
 });
 
+mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
+  const dbConnect = dbo.getDb();
+  let referenceId = req.query.reference_id;
+  let group = req.query.group;
+  let boardId = req.query.board_id;
+  const query = { token_id: referenceId };
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
+  let token = tokenData.token;
+
+  let statusQuery = { referenceId: referenceId };
+  let statusData = await dbConnect
+    .collection("mondaystatus")
+    .findOne(statusQuery);
+
+  let mydata = JSON.parse(statusData.data);
+  let statusVal = Object.values(mydata);
+
+  // console.log(statusVal);
+
+  statusVal.forEach(function (obj) {
+    let keys = Object.keys(obj);
+    let values = Object.values(obj);
+    let colVal = keys[0];
+    let limit = values[0];
+
+    console.log(colVal);
+
+    const mondayQuery = `{items_by_column_values( board_id:${boardId}, column_id:status, column_value: "${colVal}" ) { name column_values{  id title text  } group{title}}}`;
+
+    console.log(mondayQuery);
+    const client = new GraphQLClient("https://api.monday.com/v2/", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+    });
+    client
+      .request(mondayQuery)
+      .then((data) => {
+        returnDataToCLiq(data);
+      })
+      .catch((err) => {
+        returnDataToCLiq(0);
+        console.log(err);
+      });
+  });
+  const returnDataToCLiq = async (data) => {
+    console.log(data);
+  };
+});
+
 module.exports = mondayRoutes;
