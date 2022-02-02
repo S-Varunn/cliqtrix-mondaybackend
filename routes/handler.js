@@ -212,4 +212,109 @@ mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
   });
 });
 
+mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
+  const dbConnect = dbo.getDb();
+  let result = [];
+  let tot;
+  let referenceId = req.query.reference_id;
+  let group = req.query.group;
+  let person = req.query.person;
+  let boardId = req.query.board_id;
+  const query = { token_id: referenceId };
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
+  let token = tokenData.token;
+
+  let statusQuery = { referenceId: referenceId };
+  let statusData = await dbConnect
+    .collection("mondaystatus")
+    .findOne(statusQuery);
+
+  let mydata = JSON.parse(statusData.data);
+  let statusVal = Object.values(mydata);
+  tot = statusVal.length;
+
+  statusVal.forEach(function (obj) {
+    let keys = Object.keys(obj);
+    let values = Object.values(obj);
+    let colVal = keys[0];
+    let limit = values[0];
+
+    const mondayQuery = `{items_by_column_values( board_id:${boardId}, column_id:status, column_value: "${colVal}" ) { name column_values{  id title text  } group{title}}}`;
+    const client = new GraphQLClient("https://api.monday.com/v2/", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+    });
+    client
+      .request(mondayQuery)
+      .then((data) => {
+        returnDataToCLiq(data, limit, colVal);
+      })
+      .catch((err) => {
+        res.status(200).json({ message: "Data retrieved failed" });
+        console.log(err);
+      });
+  });
+  const returnDataToCLiq = async (data, limit, colVal) => {
+    let arrayResult = [];
+    let count = 0;
+    let assignTaskData = data.items_by_column_values;
+    assignTaskData.forEach(function (item) {
+      if (item) count++;
+    });
+    let subresult = {};
+    subresult.name = colVal;
+    for (let i = 0; i < count; i++) {
+      if (limit > 0) {
+        let tempGroup = assignTaskData[i].group.title;
+        if (group === tempGroup) {
+          let columnValues = assignTaskData[i].column_values;
+          columnValues.forEach(function (check) {
+            if (check.id === "person") {
+              let tempText = check.text;
+              if (
+                ((tempText.includes(person + ",") ||
+                  tempText.includes(", " + person) ||
+                  tempText.includes(", " + person + ",")) &&
+                  tempText.includes(person)) ||
+                tempText == person
+              ) {
+                let tempObject = assignTaskData[i];
+                let arrayToObject = {};
+                arrayToObject["Task"] = tempObject.name;
+                columnValues.forEach(function (col) {
+                  let title = col.title;
+                  let text = col.text;
+                  if (text == null) {
+                    text = "";
+                  }
+                  arrayToObject[title] = text;
+                });
+                arrayResult.push(arrayToObject);
+                limit--;
+              }
+            }
+          });
+        }
+      }
+    }
+    subresult["value"] = JSON.stringify(Object.assign([], arrayResult));
+    sendData(subresult);
+  };
+  const sendData = async (data) => {
+    tot--;
+    result.push(data);
+    if (tot == 0) {
+      if (result.length > 0) {
+        res
+          .status(200)
+          .json({ message: "Data successfully retrieved", result: result });
+      } else {
+        res.status(200).json({ message: "Data retrieved failed" });
+      }
+    }
+  };
+});
+
 module.exports = mondayRoutes;
