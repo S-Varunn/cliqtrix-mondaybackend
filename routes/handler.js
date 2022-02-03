@@ -229,15 +229,11 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
     .collection("mondaystatus")
     .findOne(statusQuery);
 
-  let mydata = JSON.parse(statusData.data);
-  let statusVal = Object.values(mydata);
-  tot = statusVal.length;
-
-  statusVal.forEach(function (obj) {
-    let keys = Object.keys(obj);
-    let values = Object.values(obj);
-    let colVal = keys[0];
-    let limit = values[0];
+  let myData = JSON.parse(statusData.data);
+  tot = Object.keys(myData).length;
+  for (const obj in myData) {
+    let colVal = obj;
+    let limit = myData[obj];
 
     const mondayQuery = `{items_by_column_values( board_id:${boardId}, column_id:status, column_value: "${colVal}" ) { name column_values{  id title text  } group{title}}}`;
     const client = new GraphQLClient("https://api.monday.com/v2/", {
@@ -255,7 +251,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
         res.status(200).json({ message: "Data retrieved failed" });
         console.log(err);
       });
-  });
+  }
   const returnDataToCLiq = async (data, limit, colVal) => {
     let arrayResult = [];
     let count = 0;
