@@ -299,7 +299,11 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
         }
       }
     }
-    subresult["value"] = JSON.stringify(Object.assign([], arrayResult));
+    if (arrayResult.length > 0) {
+      subresult["value"] = JSON.stringify(Object.assign([], arrayResult));
+    } else {
+      subresult["value"] = "No tasks available";
+    }
     sendData(subresult);
   };
   const sendData = async (data) => {
