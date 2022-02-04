@@ -17,8 +17,7 @@ mondayRoutes.route("/monday").get(async function (req, res) {
           .status(200)
           .json({ message: "token successfully retrieved", result: result });
       }
-    })
-    .catch((err) => console.log(err));
+    });
 });
 mondayRoutes.route("/monday/addtoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
@@ -27,18 +26,15 @@ mondayRoutes.route("/monday/addtoken").post(function (req, res) {
     date_added: new Date(),
     token: req.body.token,
   };
-  dbConnect
-    .collection("mondaytoken")
-    .insertOne(schema, function (err, result) {
-      if (err) {
-        console.log("Error inserting token");
-        res.status(400).json({ message: "Error inserting token" });
-      } else {
-        console.log(`Added a new token`);
-        res.status(200).json({ message: "token successfully uploaded" });
-      }
-    })
-    .catch((err) => console.log(err));
+  dbConnect.collection("mondaytoken").insertOne(schema, function (err, result) {
+    if (err) {
+      console.log("Error inserting token");
+      res.status(400).json({ message: "Error inserting token" });
+    } else {
+      console.log(`Added a new token`);
+      res.status(200).json({ message: "token successfully uploaded" });
+    }
+  });
 });
 mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
   const dbConnect = dbo.getDb();
@@ -59,36 +55,29 @@ mondayRoutes.route("/monday/updatetoken").post(function (req, res) {
         console.log("Token successfully updated");
         res.status(200).json({ message: "Token successfully updated" });
       }
-    })
-    .catch((err) => console.log(err));
+    });
 });
 
 mondayRoutes.route("/monday/deletetoken").delete((req, res) => {
   const dbConnect = dbo.getDb();
   const query = { token_id: req.query.token_id };
 
-  dbConnect
-    .collection("mondaytoken")
-    .deleteOne(query, function (err, _result) {
-      if (err) {
-        console.log("Error deleting token!");
-        res.status(400).json({ message: "Error deleting token!" });
-      } else {
-        console.log("Token successfully deleted");
-        res.status(200).json({ message: "Token successfully deleted" });
-      }
-    })
-    .catch((err) => console.log(err));
+  dbConnect.collection("mondaytoken").deleteOne(query, function (err, _result) {
+    if (err) {
+      console.log("Error deleting token!");
+      res.status(400).json({ message: "Error deleting token!" });
+    } else {
+      console.log("Token successfully deleted");
+      res.status(200).json({ message: "Token successfully deleted" });
+    }
+  });
 });
 
 mondayRoutes.route("/monday/getData").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   const referenceId = req.query.reference_id;
   const query = { token_id: referenceId };
-  const tokenData = await dbConnect
-    .collection("mondaytoken")
-    .findOne(query)
-    .catch((err) => console.log(err));
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
   let token = tokenData.token;
   const mondayQuery =
     "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text} } }}";
@@ -116,39 +105,27 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
         .json({ message: "Data successfully retrieved", result: result });
     }
     const query = { referenceId: referenceId };
-    const checkData = await dbConnect
-      .collection("mondaydata")
-      .findOne(query)
-      .catch((err) => console.log(err));
+    const checkData = await dbConnect.collection("mondaydata").findOne(query);
     if (!checkData) {
       const schema = {
         referenceId: referenceId,
         date_added: new Date(),
         data: data,
       };
-      dbConnect
-        .collection("mondaydata")
-        .insertOne(schema)
-        .catch((err) => console.log(err));
+      dbConnect.collection("mondaydata").insertOne(schema);
     } else {
       const updates = {
         $set: {
           data: data,
         },
       };
-      dbConnect
-        .collection("mondaydata")
-        .updateOne(query, updates)
-        .catch((err) => console.log(err));
+      dbConnect.collection("mondaydata").updateOne(query, updates);
     }
   };
   const cliqMongoExecution = async (referenceId) => {
     const query = { referenceId: referenceId };
     let unformattedData;
-    unformattedData = await dbConnect
-      .collection("mondaydata")
-      .findOne(query)
-      .catch((err) => console.log(err));
+    unformattedData = await dbConnect.collection("mondaydata").findOne(query);
     let formattedResult = await formatData(unformattedData.data);
     if (formattedResult) {
       console.log("Data sent from mongodb");
@@ -202,8 +179,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
   let data = req.body.data;
   const checkStatusData = await dbConnect
     .collection("mondaystatus")
-    .findOne(query)
-    .catch((err) => console.log(err));
+    .findOne(query);
   if (!checkStatusData) {
     const schema = {
       referenceId: referenceId,
@@ -211,20 +187,14 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
       data: data,
       backupData,
     };
-    dbConnect
-      .collection("mondaystatus")
-      .insertOne(schema)
-      .catch((err) => console.log(err));
+    dbConnect.collection("mondaystatus").insertOne(schema);
   } else {
     const updates = {
       $set: {
         data: data,
       },
     };
-    dbConnect
-      .collection("mondaystatus")
-      .updateOne(query, updates)
-      .catch((err) => console.log(err));
+    dbConnect.collection("mondaystatus").updateOne(query, updates);
   }
   res.status(200).json({ message: "Status successfully Updated" });
 });
@@ -233,20 +203,17 @@ mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
   const dbConnect = dbo.getDb();
   const referenceId = req.body.reference_id;
   const query = { referenceId: referenceId };
-  dbConnect
-    .collection("mondaystatus")
-    .findOne(query, function (err, result) {
-      if (err || result == null) {
-        console.log("Error fetching status");
-        res.status(400).json({ message: "Error fetching status" });
-      } else {
-        console.log("Status successfully retrieved");
-        res
-          .status(200)
-          .json({ message: "Status successfully retrieved", result: result });
-      }
-    })
-    .catch((err) => console.log(err));
+  dbConnect.collection("mondaystatus").findOne(query, function (err, result) {
+    if (err || result == null) {
+      console.log("Error fetching status");
+      res.status(400).json({ message: "Error fetching status" });
+    } else {
+      console.log("Status successfully retrieved");
+      res
+        .status(200)
+        .json({ message: "Status successfully retrieved", result: result });
+    }
+  });
 });
 
 mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
@@ -258,19 +225,13 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   let person = req.query.person;
   let boardId = req.query.board_id;
   const query = { token_id: referenceId };
-  const tokenData = await dbConnect
-    .collection("mondaytoken")
-    .findOne(query)
-    .catch((err) => console.log(err));
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
   let token = tokenData.token;
 
   let statusQuery = { referenceId: referenceId };
   let statusData = await dbConnect
     .collection("mondaystatus")
-    .findOne(statusQuery)
-    .catch((err) => {
-      console.log(err);
-    });
+    .findOne(statusQuery);
 
   let myData = JSON.parse(statusData.data);
   tot = Object.keys(myData).length;
@@ -359,15 +320,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
             backupData: result,
           },
         };
-        dbConnect
-          .collection("mondaystatus")
-          .updateOne(statusQuery, updates)
-          .then((res) => {
-            console.log(res);
-          })
-          .catch((err) => {
-            console.log(err);
-          });
+        dbConnect.collection("mondaystatus").updateOne(statusQuery, updates);
         console.log("Preferred task successfully retrieved");
         res
           .status(200)
