@@ -174,6 +174,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
   dbConnect.collection("mondaystatus");
   const referenceId = req.body.reference_id;
   const query = { referenceId: referenceId };
+  const backupData = "initially no data";
   let data = req.body.data;
   const checkStatusData = await dbConnect
     .collection("mondaystatus")
@@ -183,6 +184,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
       referenceId: referenceId,
       date_added: new Date(),
       data: data,
+      backupData,
     };
     dbConnect.collection("mondaystatus").insertOne(schema);
   } else {
@@ -227,7 +229,10 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   let statusQuery = { referenceId: referenceId };
   let statusData = await dbConnect
     .collection("mondaystatus")
-    .findOne(statusQuery);
+    .findOne(statusQuery)
+    .catch((err) => {
+      console.log(err);
+    });
 
   let myData = JSON.parse(statusData.data);
   tot = Object.keys(myData).length;
@@ -248,7 +253,10 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
         returnDataToCLiq(data, limit, colVal);
       })
       .catch((err) => {
-        res.status(200).json({ message: "Data retrieved failed" });
+        res.status(200).json({
+          message: "Backup Data successfully retrieved",
+          result: statusData.backupData,
+        });
         console.log(err);
       });
   }
@@ -307,6 +315,20 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
     result.push(data);
     if (tot == 0) {
       if (result.length > 0) {
+        const updates = {
+          $set: {
+            backupData: result,
+          },
+        };
+        dbConnect
+          .collection("mondaystatus")
+          .updateOne(statusQuery, updates)
+          .then((res) => {
+            console.log(res);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
         res
           .status(200)
           .json({ message: "Data successfully retrieved", result: result });
