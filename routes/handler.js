@@ -232,6 +232,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   let statusData = await dbConnect
     .collection("mondaystatus")
     .findOne(statusQuery);
+  let backupData = await statusData.backupData;
 
   let myData = JSON.parse(statusData.data);
   tot = Object.keys(myData).length;
@@ -252,12 +253,14 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
         returnDataToCLiq(data, limit, colVal);
       })
       .catch((err) => {
-        console.log("Backup Data successfully retrieved");
-        res.status(200).json({
-          message: "Backup Data successfully retrieved",
-          result: statusData.backupData,
-        });
-        console.log(err);
+        tot--;
+        if (tot == 0) {
+          console.log("Backup Data successfully retrieved");
+          res.status(200).json({
+            message: "Backup Data successfully retrieved",
+            result: backupData,
+          });
+        }
       });
   }
   const returnDataToCLiq = async (data, limit, colVal) => {
