@@ -201,7 +201,11 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
 
 mondayRoutes.route("/monday/getStatus/get").get(async function (req, res) {
   const dbConnect = dbo.getDb();
-  const referenceId = req.body.reference_id;
+
+  let referenceId = req.body.reference_id;
+  if (referenceId == null) {
+    referenceId = req.query.reference_id;
+  }
   const query = { referenceId: referenceId };
   dbConnect.collection("mondaystatus").findOne(query, function (err, result) {
     if (err || result == null) {
