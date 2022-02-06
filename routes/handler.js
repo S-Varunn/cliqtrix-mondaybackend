@@ -93,8 +93,12 @@ mondayRoutes.route("/monday/getData").get(async function (req, res) {
       cliqDirectExecution(data, referenceId);
     })
     .catch((err) => {
-      console.log("Complexity budget exhausted");
-      cliqMongoExecution(referenceId);
+      if (err.response.errors[0] === "Not Authenticated") {
+        res.status(400).json({ message: "Token is invalid" });
+      } else {
+        console.log("Complexity budget exhausted");
+        cliqMongoExecution(referenceId);
+      }
     });
   const cliqDirectExecution = async (data, referenceId) => {
     let result = await formatData(data);
@@ -262,16 +266,20 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
         returnDataToCLiq(data, limit, colVal);
       })
       .catch((err) => {
-        sendDataFromBackend = 1;
-        tot--;
-        if (tot == 0) {
-          sendDataFromBackend = 0;
-          console.log("Backup Data successfully retrieved");
-          res.status(200).json({
-            message: "Backup Data successfully retrieved",
-            result: backupData,
-            board: backupBoard,
-          });
+        if (err.response.errors[0] === "Not Authenticated") {
+          res.status(400).json({ message: "Token is invalid" });
+        } else {
+          sendDataFromBackend = 1;
+          tot--;
+          if (tot == 0) {
+            sendDataFromBackend = 0;
+            console.log("Backup Data successfully retrieved");
+            res.status(200).json({
+              message: "Backup Data successfully retrieved",
+              result: backupData,
+              board: backupBoard,
+            });
+          }
         }
       });
   }
