@@ -176,6 +176,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
   const referenceId = req.body.reference_id;
   const query = { referenceId: referenceId };
   const backupData = "initially no data";
+  const board = "0";
   let data = req.body.data;
   const checkStatusData = await dbConnect
     .collection("mondaystatus")
@@ -186,6 +187,7 @@ mondayRoutes.route("/monday/getStatus/update").post(async function (req, res) {
       date_added: new Date(),
       data: data,
       backupData,
+      board,
     };
     dbConnect.collection("mondaystatus").insertOne(schema);
   } else {
@@ -229,6 +231,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   let group = req.query.group;
   let person = req.query.person;
   let boardId = req.query.board_id;
+  let boardUser = req.query.board;
   const query = { token_id: referenceId };
   const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
   let token = tokenData.token;
@@ -238,6 +241,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
     .collection("mondaystatus")
     .findOne(statusQuery);
   let backupData = await statusData.backupData;
+  let backupBoard = await statusData.board;
 
   let myData = JSON.parse(statusData.data);
   tot = Object.keys(myData).length;
@@ -266,6 +270,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
           res.status(200).json({
             message: "Backup Data successfully retrieved",
             result: backupData,
+            board: backupBoard,
           });
         }
       });
@@ -329,22 +334,27 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
           const updates = {
             $set: {
               backupData: result,
+              board: boardUser,
             },
           };
           dbConnect.collection("mondaystatus").updateOne(statusQuery, updates);
           console.log("Preferred task successfully retrieved");
-          res
-            .status(200)
-            .json({ message: "Data successfully retrieved", result: result });
+          res.status(200).json({
+            message: "Data successfully retrieved",
+            result: result,
+            board: boardUser,
+          });
         } else {
           console.log("Preferred task retrieval failed");
           res.status(200).json({ message: "Data retrieval failed" });
         }
       } else {
         console.log("Preferred task successfully retrieved without updating");
-        res
-          .status(200)
-          .json({ message: "Data successfully retrieved", result: backupData });
+        res.status(200).json({
+          message: "Data successfully retrieved",
+          result: backupData,
+          board: backupBoard,
+        });
       }
     }
   };
