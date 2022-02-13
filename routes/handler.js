@@ -246,9 +246,32 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
     .findOne(statusQuery);
   let backupData = await statusData.backupData;
   let backupBoard = await statusData.board;
-
+  //Code block to get status title from status id
+  let statData;
+  let statusTitleComp = "Status";
   let myData = JSON.parse(statusData.data);
   tot = Object.keys(myData).length;
+  const statusTextQuery = `{ items (limit:1){ column_values { id title }}}`;
+  const statusTitleData = new GraphQLClient("https://api.monday.com/v2/", {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+  });
+  //saving statusTitleComp with the official title in monday.com board
+  statusTitleData
+    .request(statusTextQuery)
+    .then((data) => {
+      statData = data.items[0].column_values;
+      statData.forEach(function (stat) {
+        if (stat.id == "status") {
+          statusTitleComp = stat.title;
+        }
+      });
+    })
+    .catch((err) => {
+      statusTitleComp = "Status";
+    });
   for (const obj in myData) {
     let colVal = obj;
     let limit = myData[obj];
@@ -285,6 +308,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   }
   const returnDataToCLiq = async (data, limit, colVal) => {
     let arrayResult = [];
+    let botResult = [];
     let count = 0;
     let assignTaskData = data.items_by_column_values;
     assignTaskData.forEach(function (item) {
@@ -309,6 +333,9 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
               ) {
                 let tempObject = assignTaskData[i];
                 let arrayToObject = {};
+                //Object to send data for scheduler bot
+                let botObject = {};
+                botObject["Task"] = tempObject.name;
                 arrayToObject["Task"] = tempObject.name;
                 columnValues.forEach(function (col) {
                   let title = col.title;
@@ -316,9 +343,15 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
                   if (text == null) {
                     text = "";
                   }
+                  //Checking if column title same as status
+                  if (title == statusTitleComp) {
+                    botObject[title] = text;
+                  }
                   arrayToObject[title] = text;
                 });
                 arrayResult.push(arrayToObject);
+                //Pushing data to response object
+                botResult.push(botObject);
                 limit--;
               }
             }
@@ -328,8 +361,10 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
     }
     if (arrayResult.length > 0) {
       subresult["value"] = JSON.stringify(Object.assign([], arrayResult));
+      subresult["botData"] = JSON.stringify(Object.assign([], botResult));
     } else {
       subresult["value"] = "No tasks available";
+      subresult["botData"] = "No tasks available";
     }
     sendData(subresult);
   };
@@ -359,7 +394,7 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
       } else {
         console.log("Preferred task successfully retrieved without updating");
         res.status(200).json({
-          message: "Data successfully retrieved",
+          message: "Backup Data successfully retrieved",
           result: backupData,
           board: backupBoard,
         });
