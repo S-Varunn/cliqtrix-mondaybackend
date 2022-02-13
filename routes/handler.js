@@ -403,4 +403,129 @@ mondayRoutes.route("/monday/getPreferredTasks").get(async function (req, res) {
   };
 });
 
+mondayRoutes.route("/monday/getFilterData").get(async function (req, res) {
+  const dbConnect = dbo.getDb();
+  const referenceId = req.query.reference_id;
+  const person = req.query.person;
+  const query = { token_id: referenceId };
+  const tokenData = await dbConnect.collection("mondaytoken").findOne(query);
+  let token = tokenData.token;
+  const mondayQuery =
+    "{ boards { name groups{title}} boards {  name  items{name  group { title } column_values {title text} } }}";
+  const client = new GraphQLClient("https://api.monday.com/v2/", {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+  });
+  client
+    .request(mondayQuery)
+    .then((data) => {
+      cliqDirectExecution(data, referenceId);
+    })
+    .catch((err) => {
+      if (err.response.errors[0] === "Not Authenticated") {
+        res.status(400).json({ message: "Token is invalid" });
+      } else {
+        console.log("Complexity budget exhausted");
+        cliqMongoExecution(referenceId);
+      }
+    });
+  const cliqMongoExecution = async (referenceId) => {
+    const query = { referenceId: referenceId };
+    let unformattedData;
+    unformattedData = await dbConnect.collection("mondaydata").findOne(query);
+    let formattedResult = await formatData(unformattedData.data);
+    if (formattedResult) {
+      console.log("Data sent from mongodb");
+      res.status(200).json({ result: formattedResult });
+    }
+  };
+  const cliqDirectExecution = async (data, referenceId) => {
+    let result = await formatData(data);
+    if (result) {
+      console.log("Data successfully retrieved");
+      res
+        .status(200)
+        .json({ message: "Data successfully retrieved", result: result });
+    }
+    const query = { referenceId: referenceId };
+    const checkData = await dbConnect.collection("mondaydata").findOne(query);
+    if (!checkData) {
+      const schema = {
+        referenceId: referenceId,
+        date_added: new Date(),
+        data: data,
+      };
+      dbConnect.collection("mondaydata").insertOne(schema);
+    } else {
+      const updates = {
+        $set: {
+          data: data,
+        },
+      };
+      dbConnect.collection("mondaydata").updateOne(query, updates);
+    }
+  };
+  const formatData = async (data) => {
+    boards = data.boards;
+    let mainArrayObjects = [];
+    boards.forEach(function (board) {
+      let subObjects = {};
+      let myTasks = [];
+      let myHeaders = [];
+      let groups = board.groups;
+      let items = board.items;
+      let runOnce = items[0].column_values;
+      runOnce.forEach(function (head) {
+        myHeaders.push(head.title);
+      });
+      groups.forEach(function (myGroup) {
+        let grpName = myGroup.title;
+        //for MyTasks
+        let subMyTasksObj = {};
+        let subMyTasks = [];
+        items.forEach(function (myItems) {
+          if (myItems.group.title == grpName) {
+            let flag = 0;
+            let colValues = myItems.column_values;
+            let val = colValues.map((a) => a.text);
+            val.forEach(function (checkPerson) {
+              if (checkPerson != "" && checkPerson != null) {
+                if (checkPerson.includes(person)) {
+                  flag = 1;
+                }
+              }
+            });
+            if (flag == 1) {
+              //for MyTasks
+              let current = {};
+              current["Task"] = myItems.name;
+              colValues.forEach(function (col) {
+                let title = col.title;
+                let text = col.text;
+                if (text == null) {
+                  text = "";
+                }
+                current[title] = text;
+              });
+              subMyTasks.push(current);
+              subMyTasksObj.groupName = grpName;
+              subMyTasksObj["items"] = JSON.stringify(
+                Object.assign([], subMyTasks)
+              );
+            }
+          }
+        });
+        myTasks.push(subMyTasksObj);
+      });
+      subObjects.boardName = board.name;
+      subObjects.headers = myHeaders;
+      subObjects.myTasks = myTasks;
+      mainArrayObjects.push(subObjects);
+    });
+    return mainArrayObjects;
+  };
+});
+
 module.exports = mondayRoutes;
