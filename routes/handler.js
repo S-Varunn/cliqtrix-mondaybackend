@@ -493,7 +493,13 @@ mondayRoutes.route("/monday/getFilterData").get(async function (req, res) {
             let val = colValues.map((a) => a.text);
             val.forEach(function (checkPerson) {
               if (checkPerson != "" && checkPerson != null) {
-                if (checkPerson.includes(person)) {
+                if (
+                  ((checkPerson.includes(person + ",") ||
+                    checkPerson.includes(", " + person) ||
+                    checkPerson.includes(", " + person + ",")) &&
+                    checkPerson.includes(person)) ||
+                  checkPerson == person
+                ) {
                   flag = 1;
                 }
               }
