@@ -477,6 +477,7 @@ mondayRoutes.route("/monday/getFilterData").get(async function (req, res) {
       let groups = board.groups;
       let items = board.items;
       let runOnce = items[0].column_values;
+      myHeaders.push("Task");
       runOnce.forEach(function (head) {
         myHeaders.push(head.title);
       });
